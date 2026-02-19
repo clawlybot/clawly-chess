@@ -9,40 +9,76 @@
 <body>
     <div class="container">
         <h1>♟️ Clawly Chess</h1>
-        <div class="status" id="status">Weiß ist am Zug</div>
-        <div class="captured captured-top" id="captured-black"></div>
-        <div class="board-wrapper">
-            <div class="board" id="board"></div>
+        
+        <!-- Game Mode Selection -->
+        <div class="mode-selector" id="mode-selector">
+            <h3>🎮 Spielmodus wählen:</h3>
+            <div class="mode-buttons">
+                <button onclick="startGame('2player')">👥 Zu zweit</button>
+                <button onclick="startGame('computer')">🤖 vs Computer</button>
+            </div>
+            <h3>📱 Ansicht:</h3>
+            <div class="view-buttons">
+                <button onclick="setView('desktop')">💻 PC</button>
+                <button onclick="setView('mobile')">📱 Handy</button>
+            </div>
         </div>
-        <div class="captured" id="captured-white"></div>
-        <div class="controls">
-            <button onclick="resetGame()">🔄 Neues Spiel</button>
-            <button onclick="undoMove()">↩️ Rückgängig</button>
-        </div>
-        <div class="info">
-            <p>🎮 Zu zweit am selben Gerät spielen</p>
-            <p>👆 Figur anklicken, dann Zielfeld wählen</p>
-            <p>📋 Regeln: Schachmatt, Patt, Rochade, Bauer Umwandlung, en passant</p>
-        </div>
-    </div>
-    
-    <div id="promotion-modal" class="modal">
-        <div class="modal-content">
-            <h3>Bauer umwandeln zu:</h3>
-            <div class="promotion-choices">
-                <button onclick="promotePawn('q')">♛ Dame</button>
-                <button onclick="promotePawn('r')">♜ Turm</button>
-                <button onclick="promotePawn('b')">♝ Läufer</button>
-                <button onclick="promotePawn('n')">♞ Springer</button>
+        
+        <!-- Game Area -->
+        <div class="game-area" id="game-area" style="display: none;">
+            <div class="game-info">
+                <span id="mode-display">Modus: Zu zweit</span>
+                <span id="view-display">PC-Ansicht</span>
+            </div>
+            
+            <div class="status" id="status">Weiß ist am Zug</div>
+            
+            <div class="captured captured-top" id="captured-black"></div>
+            
+            <div class="board-wrapper" id="board-wrapper">
+                <div class="coordinates">
+                    <div class="rank-labels" id="rank-labels"></div>
+                    <div class="board-container">
+                        <div class="file-labels" id="file-labels"></div>
+                        <div class="board" id="board"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="captured" id="captured-white"></div>
+            
+            <div class="controls">
+                <button onclick="reset()">🔄 Neues Spiel</button>
+                <button onclick="undo()">↩️ Rückgängig</button>
+                <button onclick="showModeSelector()">⚙️ Modus</button>
+            </div>
+            
+            <div class="info">
+                <p>👆 Figur anklicken, dann Zielfeld wählen</p>
+                <p id="ki-thinking" style="display: none; color: #f1c40f;">🤖 Computer denkt...</p>
             </div>
         </div>
     </div>
     
+    <!-- Promotion Modal -->
+    <div id="promotion-modal" class="modal">
+        <div class="modal-content">
+            <h3>Bauer umwandeln zu:</h3>
+            <div class="promotion-choices">
+                <button onclick="promote('q')">♛ Dame</button>
+                <button onclick="promote('r')">♜ Turm</button>
+                <button onclick="promote('b')">♝ Läufer</button>
+                <button onclick="promote('n')">♞ Springer</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Game Over Modal -->
     <div id="game-over-modal" class="modal">
         <div class="modal-content">
             <h2 id="game-over-title">Spiel beendet!</h2>
             <p id="game-over-message"></p>
-            <button onclick="resetGame(); closeModal('game-over-modal')">🔄 Nochmal spielen</button>
+            <button onclick="reset(); closeModal('game-over-modal')">🔄 Nochmal spielen</button>
         </div>
     </div>
     
