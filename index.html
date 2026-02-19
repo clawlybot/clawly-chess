@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>♟️ Clawly Chess</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>♟️ Clawly Chess</h1>
+        <div class="status" id="status">Weiß ist am Zug</div>
+        <div class="captured captured-top" id="captured-black"></div>
+        <div class="board-wrapper">
+            <div class="board" id="board"></div>
+        </div>
+        <div class="captured" id="captured-white"></div>
+        <div class="controls">
+            <button onclick="resetGame()">🔄 Neues Spiel</button>
+            <button onclick="undoMove()">↩️ Rückgängig</button>
+        </div>
+        <div class="info">
+            <p>🎮 Zu zweit am selben Gerät spielen</p>
+            <p>👆 Figur anklicken, dann Zielfeld wählen</p>
+            <p>📋 Regeln: Schachmatt, Patt, Rochade, Bauer Umwandlung, en passant</p>
+        </div>
+    </div>
+    
+    <div id="promotion-modal" class="modal">
+        <div class="modal-content">
+            <h3>Bauer umwandeln zu:</h3>
+            <div class="promotion-choices">
+                <button onclick="promotePawn('q')">♛ Dame</button>
+                <button onclick="promotePawn('r')">♜ Turm</button>
+                <button onclick="promotePawn('b')">♝ Läufer</button>
+                <button onclick="promotePawn('n')">♞ Springer</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="game-over-modal" class="modal">
+        <div class="modal-content">
+            <h2 id="game-over-title">Spiel beendet!</h2>
+            <p id="game-over-message"></p>
+            <button onclick="resetGame(); closeModal('game-over-modal')">🔄 Nochmal spielen</button>
+        </div>
+    </div>
+    
+    <script src="app.js"></script>
+</body>
+</html>
