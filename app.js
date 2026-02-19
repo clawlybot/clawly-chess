@@ -1,26 +1,215 @@
-const PIECES={K:'♔',Q:'♕',R:'♖',B:'♗',N:'♘',P:'♙',k:'♚',q:'♛',r:'♜',b:'♝',n:'♞',p:'♟'};
-let board=[],cp='w',sel=null,vmoves=[],hist=[],cap={w:[],b:[]},ep=null,castle={w:{k:1,q:1},b:{k:1,q:1}},promo=null;
-function init(){return['rnbqkbnr','pppppppp','........','........','........','........','PPPPPPPP','RNBQKBNR'].map(r=>r.split(''));}
-function render(){const e=document.getElementById('board');if(!e)return;e.innerHTML='';for(let r=0;r<8;r++)for(let c=0;c<8;c++){const s=document.createElement('div');s.className='square';s.dataset.r=r;s.dataset.c=c;const p=board[r][c];if(p!='.')s.textContent=PIECES[p];if(sel&&sel.r==r&&sel.c==c)s.classList.add('selected');const vm=vmoves.some(m=>m.r==r&&m.c==c);if(vm)s.classList.add(board[r][c]!='.'?'capture-move':'valid-move');if(hist.length){const l=hist[hist.length-1];if((l.fr==r&&l.fc==c)||(l.tr==r&&l.tc==c))s.classList.add('last-move');}if(incheck(cp)){const k=fk(cp);if(k.r==r&&k.c==c)s.classList.add('check');}s.onclick=()=>click(r,c);e.appendChild(s);}upds();rcap();}
-function click(r,c){const p=board[r][c],o=p!='.'&&((cp=='w'&&p==p.toUpperCase())||(cp=='b'&&p==p.toLowerCase()));const mi=vmoves.findIndex(m=>m.r==r&&m.c==c);if(sel&&mi!=-1){mv(sel,{r,c},vmoves[mi]);return;}if(o){sel={r,c};vmoves=getm(r,c);render();}else{sel=null;vmoves=[];render();}}
-function getm(r,c){const p=board[r][c];if(p=='.')return[];const m=[],iW=p==p.toUpperCase(),pc=p.toLowerCase(),d=iW?-1:1,st=iW?6:1;if(pc=='p'){if(v(r+d,c)&&board[r+d][c]=='.'){m.push({r:r+d,c,pr:r+d==0||r+d==7});if(r==st&&v(r+2*d,c)&&board[r+2*d][c]=='.')m.push({r:r+2*d,c,ep:{r:r+d,c}});}for(const dc of[-1,1]){const nc=c+dc;if(v(r+d,nc)){const t=board[r+d][nc];if(t!='.'&&iW!=(t==t.toUpperCase()))m.push({r:r+d,c:nc,cap:1,pr:r+d==0||r+d==7});if(ep&&ep.r==r+d&&ep.c==nc)m.push({r:r+d,c:nc,ep:1});}}}else if(pc=='n')[[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]].forEach(([dr,dc])=>{const nr=r+dr,nc=c+dc;if(cm(r,c,nr,nc))m.push({r:nr,c:nc,cap:board[nr][nc]!='.'});});else if(pc=='b')line(r,c,[[-1,-1],[-1,1],[1,-1],[1,1]],m);else if(pc=='r')line(r,c,[[-1,0],[1,0],[0,-1],[0,1]],m);else if(pc=='q')line(r,c,[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]],m);else if(pc=='k'){[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]].forEach(([dr,dc])=>{const nr=r+dr,nc=c+dc;if(cm(r,c,nr,nc))m.push({r:nr,c:nc,cap:board[nr][nc]!='.'});});const ri=castle[iW?'w':'b'];if(ri&&!incheck(iW?'w':'b')){if(ri.k&&cc(r,c,7,iW))m.push({r,c:6,cast:'k'});if(ri.q&&cc(r,c,0,iW))m.push({r,c:2,cast:'q'});}}return m.filter(x=>leg(r,c,x));}
-function line(r,c,dirs,m){const p=board[r][c],iW=p==p.toUpperCase();dirs.forEach(([dr,dc])=>{for(let i=1;i<8;i++){const nr=r+dr*i,nc=c+dc*i;if(!v(nr,nc))break;const t=board[nr][nc];if(t=='.')m.push({r:nr,c:nc});else{if(iW!=(t==t.toUpperCase()))m.push({r:nr,c:nc,cap:1});break;}}});}
-function cm(fr,fc,tr,tc){return v(tr,tc)&&(board[tr][tc]=='.'||(board[fr][fc]==board[fr][fc].toUpperCase())!=(board[tr][tc]==board[tr][tc].toUpperCase()));}
-function cc(kr,kc,rc,iW){const d=rc>kc?1:-1;for(let c=kc+d;c!=rc;c+=d)if(board[kr][c]!='.')return false;for(let c=kc;c!=(rc>kc?6:2)+d;c+=d)if(att(kr,c,iW?'b':'w'))return false;return true;}
-function v(r,c){return r>=0&&r<8&&c>=0&&c<8;}
-function leg(fr,fc,m){const p=board[fr][fc],iW=p==p.toUpperCase(),sv=board[m.r][m.c];board[m.r][m.c]=p;board[fr][fc]='.';if(m.ep)board[iW?m.r+1:m.r-1][m.c]='.';const ch=incheck(iW?'w':'b');board[fr][fc]=p;board[m.r][m.c]=sv;if(m.ep)board[iW?m.r+1:m.r-1][m.c]=iW?'p':'P';return !ch;}
-function mv(from,to,md){const p=board[from.r][from.c],iW=p==p.toUpperCase();if(md.cap||md.ep){const x=md.ep?(iW?'p':'P'):board[to.r][to.c];if(x!='.')iW?cap.w.push(x):cap.b.push(x);}if(md.cast){const r=from.r;if(md.cast=='k'){board[r][7]='.';board[r][5]=iW?'R':'r';}else{board[r][0]='.';board[r][3]=iW?'R':'r';}}if(md.ep)board[iW?to.r+1:to.r-1][to.c]='.';ep=md.ep||null;if(md.pr){promo={from,to};document.getElementById('promotion-modal').classList.add('show');sel=null;vmoves=[];render();return;}board[to.r][to.c]=p;board[from.r][from.c]='.';if(p.toLowerCase()=='k')castle[iW?'w':'b']={k:0,q:0};if(p.toLowerCase()=='r'){if(from.c==7)castle[iW?'w':'b'].k=0;if(from.c==0)castle[iW?'w':'b'].q=0;}hist.push({fr:from.r,fc:from.c,tr:to.r,tc:to.c,p});cp=cp=='w'?'b':'w';sel=null;vmoves=[];chend();render();}
-function promote(ch){if(!promo)return;const{from,to}=promo,pp=(cp=='w'?ch.toUpperCase():ch.toLowerCase());board[to.r][to.c]=pp;board[from.r][from.c]='.';hist.push({fr:from.r,fc:from.c,tr:to.r,tc:to.c,p:pp,pr:1});document.getElementById('promotion-modal').classList.remove('show');promo=null;cp=cp=='w'?'b':'w';sel=null;vmoves=[];chend();render();}
-function att(r,c,by){for(let i=0;i<8;i++)for(let j=0;j<8;j++){const p=board[i][j];if(p=='.')continue;const pw=p==p.toUpperCase();if((by=='w'&&!pw)||(by=='b'&&pw))continue;if(catt(i,j,r,c))return true;}return false;}
-function catt(fr,fc,tr,tc){const p=board[fr][fc].toLowerCase(),dr=tr-fr,dc=tc-fc;switch(p){case'p':const d=board[fr][fc]=='P'?-1:1;return Math.abs(dc)==1&&dr==d;case'n':return(Math.abs(dr)==2&&Math.abs(dc)==1)||(Math.abs(dr)==1&&Math.abs(dc)==2);case'b':return Math.abs(dr)==Math.abs(dc)&&pclear(fr,fc,tr,tc);case'r':return(dr==0||dc==0)&&pclear(fr,fc,tr,tc);case'q':return(Math.abs(dr)==Math.abs(dc)||dr==0||dc==0)&&pclear(fr,fc,tr,tc);case'k':return Math.abs(dr)<=1&&Math.abs(dc)<=1;}return false;}
-function pclear(fr,fc,tr,tc){const sdr=Math.sign(tr-fr),sdc=Math.sign(tc-fc);let r=fr+sdr,c=fc+sdc;while(r!=tr||c!=tc){if(board[r][c]!='.')return false;r+=sdr;c+=sdc;}return true;}
-function incheck(pl){const k=fk(pl);if(!k)return false;return att(k.r,k.c,pl=='w'?'b':'w');}
-function fk(pl){const k=pl=='w'?'K':'k';for(let r=0;r<8;r++)for(let c=0;c<8;c++)if(board[r][c]==k)return{r,c};return null;}
-function chend(){const c=cp;if(!hm(c)){const x=incheck(c),t=document.getElementById('game-over-title'),m=document.getElementById('game-over-message');if(x){t.textContent='Schachmatt!';m.textContent=(c=='w'?'Schwarz':'Weiß')+' gewinnt!';}else{t.textContent='Patt!';m.textContent='Unentschieden.';}document.getElementById('game-over-modal').classList.add('show');}}
-function hm(pl){for(let r=0;r<8;r++)for(let c=0;c<8;c++){const p=board[r][c];if(p=='.')continue;if((pl=='w'&&p==p.toUpperCase())||(pl=='b'&&p==p.toLowerCase())){if(getm(r,c).length>0)return true;}}return false;}
-function upds(msg){const e=document.getElementById('status');if(msg){e.textContent=msg;e.className='status check';return;}const x=incheck(cp);e.textContent=(cp=='w'?'Weiß':'Schwarz')+' ist am Zug'+(x?' (Schach!)':'');e.className='status '+(cp=='w'?'white-turn':'black-turn')+(x?' check':'');}
-function rcap(){document.getElementById('captured-white').innerHTML=cap.w.map(p=>PIECES[p]).join('');document.getElementById('captured-black').innerHTML=cap.b.map(p=>PIECES[p]).join('');}
-function closeModal(id){document.getElementById(id).classList.remove('show');}
-function reset(){board=init();cp='w';sel=null;vmoves=[];hist=[];cap={w:[],b:[]};ep=null;castle={w:{k:1,q:1},b:{k:1,q:1}};promo=null;document.getElementById('promotion-modal')?.classList.remove('show');document.getElementById('game-over-modal')?.classList.remove('show');render();}
-function undo(){if(hist.length==0)return;reset();}
-document.addEventListener('DOMContentLoaded',()=>{board=init();render();});
+// Chess Game with 2-Player, PC Mode, Mobile Mode, and AI
+const PIECES = {
+    K: '♔', Q: '♕', R: '♖', B: '♗', N: '♘', P: '♙',
+    k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟'
+};
+
+let board = [], currentPlayer = 'w', selected = null, validMoves = [], history = [];
+let captured = { w: [], b: [] }, enPassant = null;
+let castle = { w: { k: 1, q: 1 }, b: { k: 1, q: 1 } };
+let promotion = null, gameMode = '2player', viewMode = 'desktop';
+
+function init() {
+    return [
+        'rnbqkbnr', 'pppppppp', '........', '........',
+        '........', '........', 'PPPPPPPP', 'RNBQKBNR'
+    ].map(r => r.split(''));
+}
+
+function renderBoard() {
+    const boardEl = document.getElementById('board');
+    if (!boardEl) return;
+    
+    boardEl.innerHTML = '';
+    
+    for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
+            const square = document.createElement('div');
+            square.className = 'square';
+            
+            // Correct chessboard coloring: light if (row+col) is even, dark if odd
+            const isLight = (row + col) % 2 === 0;
+            square.classList.add(isLight ? 'light' : 'dark');
+            
+            square.dataset.row = row;
+            square.dataset.col = col;
+            
+            const piece = board[row][col];
+            if (piece !== '.') {
+                square.textContent = PIECES[piece];
+            }
+            
+            // Selection
+            if (selected && selected.row === row && selected.col === col) {
+                square.classList.add('selected');
+            }
+            
+            // Valid moves
+            const isValidMove = validMoves.some(m => m.row === row && m.col === col);
+            if (isValidMove) {
+                square.classList.add(board[row][col] !== '.' ? 'capture-move' : 'valid-move');
+            }
+            
+            // Last move
+            if (history.length > 0) {
+                const last = history[history.length - 1];
+                if ((last.fromRow === row && last.fromCol === col) ||
+                    (last.toRow === row && last.toCol === col)) {
+                    square.classList.add('last-move');
+                }
+            }
+            
+            // Check indication
+            if (inCheck(currentPlayer)) {
+                const kingPos = findKing(currentPlayer);
+                if (kingPos && kingPos.row === row && kingPos.col === col) {
+                    square.classList.add('check');
+                }
+            }
+            
+            square.onclick = () => clickSquare(row, col);
+            boardEl.appendChild(square);
+        }
+    }
+    
+    updateStatus();
+    renderCaptured();
+}
+
+function clickSquare(row, col) {
+    const piece = board[row][col];
+    const isOwnPiece = piece !== '.' && 
+        ((currentPlayer === 'w' && piece === piece.toUpperCase()) ||
+         (currentPlayer === 'b' && piece === piece.toLowerCase()));
+    
+    const moveIndex = validMoves.findIndex(m => m.row === row && m.col === col);
+    
+    if (selected && moveIndex !== -1) {
+        makeMove(selected, { row, col }, validMoves[moveIndex]);
+        return;
+    }
+    
+    if (isOwnPiece) {
+        selected = { row, col };
+        validMoves = getMoves(row, col);
+        renderBoard();
+    } else {
+        selected = null;
+        validMoves = [];
+        renderBoard();
+    }
+}
+
+function getMoves(row, col) {
+    const piece = board[row][col];
+    if (piece === '.') return [];
+    
+    const moves = [];
+    const isWhite = piece === piece.toUpperCase();
+    const pieceType = piece.toLowerCase();
+    const dir = isWhite ? -1 : 1;
+    const startRow = isWhite ? 6 : 1;
+    
+    if (pieceType === 'p') {
+        // Forward
+        if (isValid(row + dir, col) && board[row + dir][col] === '.') {
+            moves.push({ row: row + dir, col: col, promotion: row + dir === 0 || row + dir === 7 });
+            // Double step
+            if (row === startRow && board[row + 2 * dir][col] === '.') {
+                moves.push({ row: row + 2 * dir, col: col, enPassant: { row: row + dir, col: col } });
+            }
+        }
+        // Captures
+        for (const dc of [-1, 1]) {
+            const newCol = col + dc;
+            if (isValid(row + dir, newCol)) {
+                const target = board[row + dir][newCol];
+                if (target !== '.' && isWhite !== (target === target.toUpperCase())) {
+                    moves.push({ row: row + dir, col: newCol, capture: true, 
+                                 promotion: row + dir === 0 || row + dir === 7 });
+                }
+                // En passant
+                if (enPassant && enPassant.row === row + dir && enPassant.col === newCol) {
+                    moves.push({ row: row + dir, col: newCol, enPassant: true });
+                }
+            }
+        }
+    } else if (pieceType === 'n') {
+        const jumps = [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]];
+        jumps.forEach(([dr, dc]) => {
+            const nr = row + dr, nc = col + dc;
+            if (canMove(row, col, nr, nc)) {
+                moves.push({ row: nr, col: nc, capture: board[nr][nc] !== '.' });
+            }
+        });
+    } else if (pieceType === 'b') {
+        addLineMoves(row, col, [[-1,-1],[-1,1],[1,-1],[1,1]], moves);
+    } else if (pieceType === 'r') {
+        addLineMoves(row, col, [[-1,0],[1,0],[0,-1],[0,1]], moves);
+    } else if (pieceType === 'q') {
+        addLineMoves(row, col, [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]], moves);
+    } else if (pieceType === 'k') {
+        const steps = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
+        steps.forEach(([dr, dc]) => {
+            const nr = row + dr, nc = col + dc;
+            if (canMove(row, col, nr, nc)) {
+                moves.push({ row: nr, col: nc, capture: board[nr][nc] !== '.' });
+            }
+        });
+        // Castling
+        const info = castle[isWhite ? 'w' : 'b'];
+        if (info && !inCheck(isWhite ? 'w' : 'b')) {
+            // Kingside
+            if (info.k && canCastle(row, col, 7, isWhite)) {
+                moves.push({ row: row, col: 6, castling: 'k' });
+            }
+            // Queenside
+            if (info.q && canCastle(row, col, 0, isWhite)) {
+                moves.push({ row: row, col: 2, castling: 'q' });
+            }
+        }
+    }
+    
+    return moves.filter(m => isLegal(row, col, m));
+}
+
+function addLineMoves(row, col, directions, moves) {
+    const piece = board[row][col];
+    const isWhite = piece === piece.toUpperCase();
+    
+    directions.forEach(([dr, dc]) => {
+        for (let i = 1; i < 8; i++) {
+            const nr = row + dr * i, nc = col + dc * i;
+            if (!isValid(nr, nc)) break;
+            const target = board[nr][nc];
+            if (target === '.') {
+                moves.push({ row: nr, col: nc });
+            } else {
+                if (isWhite !== (target === target.toUpperCase())) {
+                    moves.push({ row: nr, col: nc, capture: true });
+                }
+                break;
+            }
+        }
+    });
+}
+
+function canMove(fromRow, fromCol, toRow, toCol) {
+    if (!isValid(toRow, toCol)) return false;
+    const fromPiece = board[fromRow][fromCol];
+    const toPiece = board[toRow][toCol];
+    if (toPiece === '.') return true;
+    return (fromPiece === fromPiece.toUpperCase()) !== (toPiece === toPiece.toUpperCase());
+}
+
+function isValid(row, col) {
+    return row >= 0 && row < 8 && col >= 0 && col < 8;
+}
+
+function canCastle(kingRow, kingCol, rookCol, isWhite) {
+    const dir = rookCol > kingCol ? 1 : -1;
+    // Check spaces between
+    for (let c = kingCol + dir; c !== rookCol; c += dir) {
+        if (board[kingRow][c] !== '.') return false;
+    }
+    // Check squares king passes
