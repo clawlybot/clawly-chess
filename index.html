@@ -1,87 +1,145 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>♟️ Clawly Chess</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clawly Chess</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
-        <h1>♟️ Clawly Chess</h1>
-        
-        <!-- Game Mode Selection -->
-        <div class="mode-selector" id="mode-selector">
-            <h3>🎮 Spielmodus wählen:</h3>
-            <div class="mode-buttons">
-                <button onclick="startGame('2player')">👥 Zu zweit</button>
-                <button onclick="startGame('computer')">🤖 vs Computer</button>
-            </div>
-            <h3>📱 Ansicht:</h3>
-            <div class="view-buttons">
-                <button onclick="setView('desktop')">💻 PC</button>
-                <button onclick="setView('mobile')">📱 Handy</button>
-            </div>
-        </div>
-        
-        <!-- Game Area -->
-        <div class="game-area" id="game-area" style="display: none;">
-            <div class="game-info">
-                <span id="mode-display">Modus: Zu zweit</span>
-                <span id="view-display">PC-Ansicht</span>
-            </div>
-            
-            <div class="status" id="status">Weiß ist am Zug</div>
-            
-            <div class="captured captured-top" id="captured-black"></div>
-            
-            <div class="board-wrapper" id="board-wrapper">
-                <div class="coordinates">
-                    <div class="rank-labels" id="rank-labels"></div>
-                    <div class="board-container">
-                        <div class="file-labels" id="file-labels"></div>
-                        <div class="board" id="board"></div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="captured" id="captured-white"></div>
-            
-            <div class="controls">
-                <button onclick="reset()">🔄 Neues Spiel</button>
-                <button onclick="undo()">↩️ Rückgängig</button>
-                <button onclick="showModeSelector()">⚙️ Modus</button>
-            </div>
-            
-            <div class="info">
-                <p>👆 Figur anklicken, dann Zielfeld wählen</p>
-                <p id="ki-thinking" style="display: none; color: #f1c40f;">🤖 Computer denkt...</p>
-            </div>
-        </div>
+
+<!-- ── MODE SELECTOR ─────────────────────────────────────── -->
+<div class="mode-screen" id="mode-selector">
+  <div class="mode-card">
+    <div class="logo">♟ Clawly Chess</div>
+
+    <h3>Spielmodus</h3>
+    <div class="mode-buttons">
+      <button class="mode-btn" onclick="startGame('2player')">
+        <span class="mode-icon">👥</span>
+        <span class="mode-label">Zwei Spieler</span>
+      </button>
+      <button class="mode-btn" onclick="startGame('computer')">
+        <span class="mode-icon">🤖</span>
+        <span class="mode-label">vs Computer</span>
+      </button>
+      <button class="mode-btn" onclick="startGame('computer-black')">
+        <span class="mode-icon">⚫</span>
+        <span class="mode-label">vs Computer (du = Schwarz)</span>
+      </button>
     </div>
-    
-    <!-- Promotion Modal -->
-    <div id="promotion-modal" class="modal">
-        <div class="modal-content">
-            <h3>Bauer umwandeln zu:</h3>
-            <div class="promotion-choices">
-                <button onclick="promote('q')">♛ Dame</button>
-                <button onclick="promote('r')">♜ Turm</button>
-                <button onclick="promote('b')">♝ Läufer</button>
-                <button onclick="promote('n')">♞ Springer</button>
-            </div>
-        </div>
+
+    <h3>Schwierigkeit</h3>
+    <div class="diff-buttons">
+      <button class="diff-btn" data-diff="easy"   onclick="setDifficulty('easy')">Leicht</button>
+      <button class="diff-btn active" data-diff="medium" onclick="setDifficulty('medium')">Mittel</button>
+      <button class="diff-btn" data-diff="hard"   onclick="setDifficulty('hard')">Schwer</button>
+      <button class="diff-btn" data-diff="expert" onclick="setDifficulty('expert')">Experte</button>
     </div>
-    
-    <!-- Game Over Modal -->
-    <div id="game-over-modal" class="modal">
-        <div class="modal-content">
-            <h2 id="game-over-title">Spiel beendet!</h2>
-            <p id="game-over-message"></p>
-            <button onclick="reset(); closeModal('game-over-modal')">🔄 Nochmal spielen</button>
-        </div>
+
+    <h3>Bedenkzeit</h3>
+    <div class="clock-buttons">
+      <button class="clock-btn" data-min="1"  onclick="setClockTime(1)">1 min</button>
+      <button class="clock-btn" data-min="3"  onclick="setClockTime(3)">3 min</button>
+      <button class="clock-btn" data-min="5"  onclick="setClockTime(5)">5 min</button>
+      <button class="clock-btn active" data-min="10" onclick="setClockTime(10)">10 min</button>
+      <button class="clock-btn" data-min="30" onclick="setClockTime(30)">30 min</button>
     </div>
-    
-    <script src="app.js"></script>
+  </div>
+</div>
+
+<!-- ── GAME AREA ──────────────────────────────────────────── -->
+<div class="game-area" id="game-area" style="display:none">
+
+  <!-- Left: board column -->
+  <div class="board-col">
+    <div class="player-bar top">
+      <div class="player-info">
+        <span class="player-avatar black-avatar">♚</span>
+        <span class="player-name">Schwarz</span>
+        <span class="cap-row" id="captured-white"></span>
+        <span class="material-adv" id="material-adv"></span>
+      </div>
+      <div class="clock-time" id="clock-b">10:00</div>
+    </div>
+
+    <div class="status" id="status">Weiß ist am Zug</div>
+
+    <div class="board-wrapper">
+      <div class="rank-labels" id="rank-labels"></div>
+      <div class="board" id="board"></div>
+    </div>
+    <div class="file-labels" id="file-labels"></div>
+
+    <div class="player-bar bottom">
+      <div class="player-info">
+        <span class="player-avatar white-avatar">♔</span>
+        <span class="player-name">Weiß</span>
+        <span class="cap-row" id="captured-black"></span>
+      </div>
+      <div class="clock-time" id="clock-w">10:00</div>
+    </div>
+
+    <div class="controls">
+      <button class="ctrl-btn" onclick="reset()" title="Neu">↺</button>
+      <button class="ctrl-btn" onclick="undo()" title="Rückgängig">↩</button>
+      <button class="ctrl-btn" id="btn-flip" onclick="flipBoard()" title="Brett drehen" style="display:none">⇅</button>
+      <button class="ctrl-btn danger" onclick="resign()" title="Aufgeben">🏳</button>
+      <button class="ctrl-btn" onclick="offerDraw()" title="Remis anbieten">🤝</button>
+      <button class="ctrl-btn" onclick="showModeSelector()" title="Modus">⚙</button>
+    </div>
+
+    <div class="mode-info">
+      <span id="mode-display">Zu zweit</span>
+      <span id="ki-thinking" style="display:none">🤖 Denkt…</span>
+    </div>
+
+    <div id="clock-panel" class="clock-panel" style="display:none"></div>
+  </div>
+
+  <!-- Right: move history -->
+  <div class="history-col">
+    <div class="history-header">Züge</div>
+    <div class="move-list" id="move-list"></div>
+  </div>
+
+</div>
+
+<!-- ── MODALS ─────────────────────────────────────────────── -->
+<div id="promotion-modal" class="modal">
+  <div class="modal-content">
+    <h3>Umwandlung</h3>
+    <div class="promotion-choices">
+      <button data-label="Dame"    onclick="promote('q')">♛ Dame</button>
+      <button data-label="Turm"    onclick="promote('r')">♜ Turm</button>
+      <button data-label="Läufer"  onclick="promote('b')">♝ Läufer</button>
+      <button data-label="Springer" onclick="promote('n')">♞ Springer</button>
+    </div>
+  </div>
+</div>
+
+<div id="game-over-modal" class="modal">
+  <div class="modal-content">
+    <h2 id="game-over-title">Spiel beendet</h2>
+    <p id="game-over-message"></p>
+    <div class="modal-buttons">
+      <button onclick="reset();closeModal('game-over-modal')">Nochmal spielen</button>
+      <button onclick="showModeSelector();closeModal('game-over-modal')">Modus wählen</button>
+    </div>
+  </div>
+</div>
+
+<div id="draw-modal" class="modal">
+  <div class="modal-content">
+    <h2>Remis anbieten?</h2>
+    <p>Möchtest du ein Remis anbieten?</p>
+    <div class="modal-buttons">
+      <button onclick="acceptDraw()">Annehmen</button>
+      <button onclick="closeModal('draw-modal')">Ablehnen</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
 </body>
 </html>
